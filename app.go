@@ -258,7 +258,6 @@ func (app *GridApp) draw() {
 		}
 	}
 
-	// Define some styles
 	var (
 		defaultStyle = tcell.StyleDefault
 		greenStyle   = defaultStyle.Foreground(tcell.ColorGreen)
@@ -291,7 +290,6 @@ func (app *GridApp) draw() {
 		{"Quit: Q or Esc", grayStyle},
 	}
 
-	// Then, when drawing the controls, use the style associated with each control
 	for i, control := range controls {
 		for j, ch := range control.text {
 			app.screen.SetContent(1+j, screenHeight-len(controls)+i, ch, nil, control.style)
