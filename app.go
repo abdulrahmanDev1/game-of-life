@@ -75,6 +75,13 @@ func (app *GridApp) Run() error {
 					app.screen.Sync()
 					app.changed = true
 				case *tcell.EventKey:
+					// Get the current screen size
+					screenWidth, screenHeight := app.screen.Size()
+
+					// Calculate maximum grid width and height
+					maxGridWidth := (screenWidth - 2) / 3
+					maxGridHeight := (screenHeight - 2) / 2
+
 					switch ev.Key() {
 					case tcell.KeyEscape:
 						return nil
@@ -90,21 +97,29 @@ func (app *GridApp) Run() error {
 							app.changed = true
 						}
 					case tcell.KeyUp:
-						app.gridHeight = max(1, app.gridHeight-1)
-						app.grid.Resize(app.gridWidth, app.gridHeight)
-						app.changed = true
+						if app.gridHeight > 1 {
+							app.gridHeight = max(1, app.gridHeight-1)
+							app.grid.Resize(app.gridWidth, app.gridHeight)
+							app.changed = true
+						}
 					case tcell.KeyDown:
-						app.gridHeight++
-						app.grid.Resize(app.gridWidth, app.gridHeight)
-						app.changed = true
+						if app.gridHeight < maxGridHeight {
+							app.gridHeight++
+							app.grid.Resize(app.gridWidth, app.gridHeight)
+							app.changed = true
+						}
 					case tcell.KeyLeft:
-						app.gridWidth = max(1, app.gridWidth-1)
-						app.grid.Resize(app.gridWidth, app.gridHeight)
-						app.changed = true
+						if app.gridWidth > 1 {
+							app.gridWidth = max(1, app.gridWidth-1)
+							app.grid.Resize(app.gridWidth, app.gridHeight)
+							app.changed = true
+						}
 					case tcell.KeyRight:
-						app.gridWidth++
-						app.grid.Resize(app.gridWidth, app.gridHeight)
-						app.changed = true
+						if app.gridWidth < maxGridWidth {
+							app.gridWidth++
+							app.grid.Resize(app.gridWidth, app.gridHeight)
+							app.changed = true
+						}
 					}
 				case *tcell.EventMouse:
 					x, y := ev.Position()
@@ -243,23 +258,43 @@ func (app *GridApp) draw() {
 		}
 	}
 
-	controls := []string{
-		"Controls:",
-		"Arrow keys: Resize grid",
-		"Left click: Toggle cell",
-		"Space: " + func() string {
+	// Define some styles
+	var (
+		defaultStyle = tcell.StyleDefault
+		greenStyle   = defaultStyle.Foreground(tcell.ColorGreen)
+		redStyle     = defaultStyle.Foreground(tcell.ColorRed)
+		blueStyle    = defaultStyle.Foreground(tcell.ColorBlue)
+		grayStyle    = defaultStyle.Foreground(tcell.ColorGray)
+	)
+
+	controls := []struct {
+		text  string
+		style tcell.Style
+	}{
+		{"Controls:", defaultStyle},
+		{"Arrow keys: Resize grid", blueStyle},
+		{"Left click: Toggle cell", blueStyle},
+		{"Space: " + func() string {
 			if app.paused {
 				return "Resume ▷"
 			} else {
 				return "Pause ||"
 			}
-		}(),
-		"Clear grid: C",
-		"Quit: Q or Esc",
+		}(), func() tcell.Style {
+			if app.paused {
+				return greenStyle
+			} else {
+				return redStyle
+			}
+		}()},
+		{"Clear grid: C", redStyle},
+		{"Quit: Q or Esc", grayStyle},
 	}
+
+	// Then, when drawing the controls, use the style associated with each control
 	for i, control := range controls {
-		for j, ch := range control {
-			app.screen.SetContent(1+j, screenHeight-len(controls)+i, ch, nil, tcell.StyleDefault)
+		for j, ch := range control.text {
+			app.screen.SetContent(1+j, screenHeight-len(controls)+i, ch, nil, control.style)
 		}
 	}
 
